@@ -1,14 +1,40 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { InsightCard } from "./InsightCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { computeBusinessInsights } from "@/lib/insights";
+import { listQuotationRecords } from "@/lib/quotationRecords";
 import { formatCurrency } from "@/lib/workflow";
-import { ChevronDown, ChevronUp, Sparkles, TrendingUp, Users, FileText } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Sparkles, TrendingUp, Users, FileText } from "lucide-react";
 
 export function InsightsDashboard() {
-  const snapshot = useMemo(() => computeBusinessInsights(), []);
+  const [records, setRecords] = useState<Awaited<ReturnType<typeof listQuotationRecords>>>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    listQuotationRecords()
+      .then((rows) => {
+        if (!cancelled) setRecords(rows);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const snapshot = useMemo(() => computeBusinessInsights(records), [records]);
   const [showMore, setShowMore] = useState(false);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16 text-muted-foreground">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
 
   const { primary, more, pulse } = snapshot;
 

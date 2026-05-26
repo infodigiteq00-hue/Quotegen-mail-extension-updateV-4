@@ -17,36 +17,50 @@ export async function getInviteByToken(token: string): Promise<InvitePreview | n
   return data[0] as InvitePreview;
 }
 
+/** True when the logged-in owner account is disabled by a super admin. */
+export async function isOwnerAccountDisabled(): Promise<boolean> {
+  const { data, error } = await supabase.rpc("is_my_owner_account_disabled");
+  if (!error) return data === true;
+
+  console.warn("is_my_owner_account_disabled RPC failed:", error.message);
+  return false;
+}
+
+function roleBlockedForInactiveOwner(role: AppRole | null, isActive: boolean | undefined): AppRole | null {
+  if (role === "owner" && isActive === false) return null;
+  return role;
+}
+
 /** Resolve role via DB RPC (bypasses RLS) with client-side fallback */
 export async function resolveUserRole(userId: string, email: string): Promise<AppRole | null> {
   const { data: rpcRole, error: rpcError } = await supabase.rpc("get_my_role");
 
-  if (!rpcError && rpcRole) {
-    return rpcRole as AppRole;
+  if (!rpcError) {
+    return (rpcRole as AppRole) ?? null;
   }
 
-  if (rpcError) {
-    console.warn("get_my_role RPC failed, using fallback:", rpcError.message);
-  }
+  console.warn("get_my_role RPC failed, using fallback:", rpcError.message);
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, is_active")
     .eq("id", userId)
     .maybeSingle();
 
   if (!profileError && profile?.role) {
-    return profile.role as AppRole;
+    return roleBlockedForInactiveOwner(profile.role as AppRole, profile.is_active as boolean | undefined);
   }
 
   if (email) {
     const { data: byEmail } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, is_active")
       .ilike("email", email)
       .maybeSingle();
 
-    if (byEmail?.role) return byEmail.role as AppRole;
+    if (byEmail?.role) {
+      return roleBlockedForInactiveOwner(byEmail.role as AppRole, byEmail.is_active as boolean | undefined);
+    }
   }
 
   const { data: invite } = await supabase
@@ -58,7 +72,13 @@ export async function resolveUserRole(userId: string, email: string): Promise<Ap
     .limit(1)
     .maybeSingle();
 
-  return (invite?.role as AppRole) ?? null;
+  const inviteRole = (invite?.role as AppRole) ?? null;
+  if (inviteRole === "owner") {
+    const disabled = await isOwnerAccountDisabled();
+    if (disabled) return null;
+  }
+
+  return inviteRole;
 }
 
 export function dashboardPathForRole(role: AppRole | null): string {

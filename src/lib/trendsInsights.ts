@@ -1,4 +1,4 @@
-import { readStore } from "./workflowStore";
+import type { CommercialDocumentRow, QuotationRecordRow } from "./workflow";
 import { lineTotal } from "./quotation";
 import type { QuotationItem } from "./quotation";
 
@@ -37,8 +37,10 @@ const aggregateBy = <T>(
     .sort((a, b) => b.value - a.value);
 };
 
-export const computeTrendsSnapshot = (): TrendsSnapshot => {
-  const { records, documents } = readStore();
+export const computeTrendsSnapshot = (
+  records: QuotationRecordRow[],
+  documents: CommercialDocumentRow[]
+): TrendsSnapshot => {
 
   const topCompanies = aggregateBy(
     records,

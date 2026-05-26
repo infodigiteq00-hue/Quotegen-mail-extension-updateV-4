@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/workflow/StatusBadge";
 import { ConvertDocumentMenu } from "@/components/workflow/ConvertDocumentMenu";
 import { RecordCategoryTabs } from "@/components/workflow/RecordCategoryTabs";
 import { CommercialDocumentsTable } from "@/components/workflow/CommercialDocumentsTable";
+import { QuotationRecordsMobileList } from "@/components/workflow/QuotationRecordsMobileList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -127,17 +128,25 @@ export default function QuotationRecords() {
 
   const handleLoadSample = async () => {
     setLoadingSample(true);
-    loadSampleWorkflowData();
-    toast.success("Sample data loaded — saved in your browser (demo mode)");
-    await load();
+    try {
+      await loadSampleWorkflowData();
+      toast.success("Sample data loaded into your workspace");
+      await load();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to load sample data");
+    }
     setLoadingSample(false);
   };
 
-  const handleClear = () => {
-    if (!confirm("Clear all quotation records from this browser?")) return;
-    clearWorkflowData();
-    toast.success("Demo data cleared");
-    load();
+  const handleClear = async () => {
+    if (!confirm("Clear all quotation records from the database? This cannot be undone.")) return;
+    try {
+      await clearWorkflowData();
+      toast.success("All records cleared");
+      await load();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to clear records");
+    }
   };
 
   const handleDuplicate = async (record: QuotationRecordRow) => {
@@ -152,12 +161,12 @@ export default function QuotationRecords() {
 
   return (
     <AppShell>
-      <main className="w-full max-w-[min(100%,1920px)] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <main className="page-main space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Quotation Records</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Quotation Records</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Track, search, and convert quotations — demo mode saves locally in your browser.
+              Track, search, and convert quotations — saved to your workspace database.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -238,9 +247,27 @@ export default function QuotationRecords() {
               quoteNoById={quoteNoById}
               loading={loading}
             />
+          ) : loading ? (
+            <div className="px-4 py-16 text-center text-muted-foreground text-sm">Loading records…</div>
+          ) : filtered.length === 0 ? (
+            <div className="px-4 py-16 text-center">
+              <p className="font-medium">No quotations yet</p>
+              <p className="text-xs text-muted-foreground mt-1 mb-4">
+                Load sample data to explore the workflow, or create a quote and click Save.
+              </p>
+              <Button variant="outline" size="sm" onClick={handleLoadSample} disabled={loadingSample}>
+                <Sparkles className="h-4 w-4 mr-1.5" /> Load sample data
+              </Button>
+            </div>
           ) : (
-          <div className="w-full overflow-x-auto">
-            <table className="w-full min-w-full text-sm table-fixed">
+          <>
+          <QuotationRecordsMobileList
+            records={filtered}
+            onDuplicate={handleDuplicate}
+            onConverted={load}
+          />
+          <div className="hidden md:block table-scroll">
+            <table className="w-full text-sm table-fixed">
               <thead>
                 <tr className="border-b bg-muted/30 text-left text-[11px] font-medium tracking-wide text-muted-foreground">
                   <th className="w-[11%] px-5 py-3 font-medium">Quote</th>
@@ -253,26 +280,7 @@ export default function QuotationRecords() {
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-16 text-center text-muted-foreground">
-                      Loading records…
-                    </td>
-                  </tr>
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-16 text-center">
-                      <p className="font-medium">No quotations yet</p>
-                      <p className="text-xs text-muted-foreground mt-1 mb-4">
-                        Load sample data to explore the workflow, or create a quote and click Save.
-                      </p>
-                      <Button variant="outline" size="sm" onClick={handleLoadSample} disabled={loadingSample}>
-                        <Sparkles className="h-4 w-4 mr-1.5" /> Load sample data
-                      </Button>
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((r) => (
+                  {filtered.map((r) => (
                     <tr key={r.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
                       <td className="px-5 py-3.5">
                         <Link to={`/records/${r.id}`} className="font-mono font-medium hover:text-primary">
@@ -330,11 +338,11 @@ export default function QuotationRecords() {
                         </div>
                       </td>
                     </tr>
-                  ))
-                )}
+                  ))}
               </tbody>
             </table>
           </div>
+          </>
           )}
         </Card>
       </main>

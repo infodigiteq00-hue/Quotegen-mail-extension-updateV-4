@@ -1,4 +1,3 @@
-import { readStore } from "../workflowStore";
 import { lineTotal } from "../quotation";
 import type { QuotationItem } from "../quotation";
 import type { QuotationRecordRow, QuotationStatus } from "../workflow";
@@ -693,8 +692,7 @@ const dedupeInsights = (insights: BusinessInsight[]): BusinessInsight[] => {
 };
 
 /** Main entry — aggregates all analyzers and ranks insights for the dashboard */
-export const computeBusinessInsights = (): InsightsSnapshot => {
-  const { records } = readStore();
+export const computeBusinessInsights = (records: QuotationRecordRow[]): InsightsSnapshot => {
   const lines = flattenLines(records);
 
   const all = dedupeInsights([

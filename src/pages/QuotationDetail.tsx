@@ -91,7 +91,7 @@ export default function QuotationDetail() {
   if (loading) {
     return (
       <AppShell>
-        <main className="max-w-[1200px] mx-auto px-6 py-20 text-center text-muted-foreground">Loading…</main>
+        <main className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-6 py-20 text-center text-muted-foreground">Loading…</main>
       </AppShell>
     );
   }
@@ -99,7 +99,7 @@ export default function QuotationDetail() {
   if (!record) {
     return (
       <AppShell>
-        <main className="max-w-[1200px] mx-auto px-6 py-20 text-center">
+        <main className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-6 py-20 text-center">
           <p className="font-medium">Quotation not found</p>
           <Link to="/records" className="text-sm text-primary mt-2 inline-block">
             Back to records
@@ -111,7 +111,7 @@ export default function QuotationDetail() {
 
   return (
     <AppShell>
-      <main className="max-w-[1200px] mx-auto px-6 py-8 space-y-6">
+      <main className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-6 py-6 sm:py-8 space-y-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-start gap-3">
             <Link to="/records" className="mt-1 text-muted-foreground hover:text-foreground">
@@ -119,7 +119,7 @@ export default function QuotationDetail() {
             </Link>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-2xl font-mono font-semibold">{record.quote_no}</h1>
+                <h1 className="text-xl sm:text-2xl font-mono font-semibold break-all">{record.quote_no}</h1>
                 <StatusBadge status={record.status} />
               </div>
               <p className="text-sm text-muted-foreground mt-1">
@@ -186,7 +186,7 @@ export default function QuotationDetail() {
           <div className="lg:col-span-2 space-y-6">
             <Card className="p-5 border">
               <h2 className="text-sm font-semibold mb-4">Commercial summary</h2>
-              <dl className="grid grid-cols-2 gap-4 text-sm">
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                   <dt className="text-muted-foreground text-xs">Client</dt>
                   <dd className="font-medium mt-0.5">{record.client?.company_name || "—"}</dd>

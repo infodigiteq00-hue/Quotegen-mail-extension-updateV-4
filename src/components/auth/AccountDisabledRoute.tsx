@@ -1,9 +1,10 @@
 import { Navigate } from "react-router-dom";
 import { useAuth, dashboardPathForRole } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
+import { DisabledAccountScreen } from "@/components/auth/DisabledAccountScreen";
 
-export function GuestRoute({ children }: { children: React.ReactNode }) {
-  const { user, role, loading, roleLoading, accountDisabled } = useAuth();
+export function AccountDisabledRoute() {
+  const { user, loading, roleLoading, role, accountDisabled } = useAuth();
 
   if (loading || (user && roleLoading)) {
     return (
@@ -13,13 +14,17 @@ export function GuestRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (user && accountDisabled) {
-    return <Navigate to="/account-disabled" replace />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
   }
 
-  if (user && role) {
+  if (!accountDisabled && role) {
     return <Navigate to={dashboardPathForRole(role)} replace />;
   }
 
-  return <>{children}</>;
+  if (!accountDisabled && !role) {
+    return <Navigate to="/login" state={{ reason: "no-role" }} replace />;
+  }
+
+  return <DisabledAccountScreen />;
 }

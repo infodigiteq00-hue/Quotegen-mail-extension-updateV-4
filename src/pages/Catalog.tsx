@@ -52,20 +52,20 @@ export default function Catalog() {
   return (
     <div className="min-h-screen bg-gradient-mesh">
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-background/80 border-b">
-        <div className="max-w-[1400px] mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/" className="text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /></Link>
-            <Package className="h-4 w-4 text-primary" />
-            <div className="text-[15px] font-semibold tracking-tight">Product Catalog</div>
-            <span className="text-[11px] text-muted-foreground">· {items.length} products</span>
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-6 h-14 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Link to="/" className="text-muted-foreground hover:text-foreground shrink-0"><ArrowLeft className="h-4 w-4" /></Link>
+            <Package className="h-4 w-4 text-primary shrink-0" />
+            <div className="text-[15px] font-semibold tracking-tight truncate">Product Catalog</div>
+            <span className="text-[11px] text-muted-foreground hidden sm:inline shrink-0">· {items.length} products</span>
           </div>
-          <Button size="sm" onClick={() => { setEditing(blank()); setOpen(true); }} className="bg-gradient-primary text-primary-foreground border-0 shadow-glow">
-            <Plus className="h-4 w-4 mr-1.5" />Add product
+          <Button size="sm" onClick={() => { setEditing(blank()); setOpen(true); }} className="bg-gradient-primary text-primary-foreground border-0 shadow-glow shrink-0 h-8 px-2 sm:px-3">
+            <Plus className="h-4 w-4 sm:mr-1.5" /><span className="hidden sm:inline">Add product</span>
           </Button>
         </div>
       </header>
 
-      <main className="max-w-[1400px] mx-auto px-6 py-8">
+      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-6 py-6 sm:py-8">
         <div className="mb-5 relative max-w-md">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Search by name, model, series, category…" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
@@ -109,7 +109,7 @@ export default function Catalog() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editing.id ? "Edit product" : "Add product"}</DialogTitle></DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
             <Field label="Name *"><Input value={editing.name || ""} onChange={(e) => setEditing({ ...editing, name: e.target.value })} /></Field>
             <Field label="Category"><Input placeholder="Pumps, Valves…" value={editing.category || ""} onChange={(e) => setEditing({ ...editing, category: e.target.value })} /></Field>
             <Field label="Series"><Input placeholder="NS-Series" value={editing.series || ""} onChange={(e) => setEditing({ ...editing, series: e.target.value })} /></Field>

@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { GuestRoute } from "@/components/auth/GuestRoute";
+import { AccountDisabledRoute } from "@/components/auth/AccountDisabledRoute";
 import Index from "./pages/Index.tsx";
 import Catalog from "./pages/Catalog.tsx";
 import QuotationRecords from "./pages/QuotationRecords.tsx";
@@ -89,6 +90,7 @@ const App = () => (
               }
             />
             <Route path="/accept-invite" element={<AcceptInvite />} />
+            <Route path="/account-disabled" element={<AccountDisabledRoute />} />
             <Route
               path="/signup"
               element={

@@ -9,12 +9,19 @@ import {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/primary/client";
-import { type AppRole, dashboardPathForRole, fetchUserProfile, resolveUserRole } from "@/lib/auth";
+import {
+  type AppRole,
+  dashboardPathForRole,
+  fetchUserProfile,
+  isOwnerAccountDisabled,
+  resolveUserRole,
+} from "@/lib/auth";
 
 type AuthState = {
   session: Session | null;
   user: User | null;
   role: AppRole | null;
+  accountDisabled: boolean;
   profileName: string | null;
   loading: boolean;
   roleLoading: boolean;
@@ -28,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [accountDisabled, setAccountDisabled] = useState(false);
   const [profileName, setProfileName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [roleLoading, setRoleLoading] = useState(false);
@@ -42,15 +50,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       if (!activeUser) {
         setRole(null);
+        setAccountDisabled(false);
         setProfileName(null);
         return null;
       }
       const email = activeUser.email ?? "";
-      const [next, profile] = await Promise.all([
+      const [next, profile, disabled] = await Promise.all([
         resolveUserRole(activeUser.id, email),
         fetchUserProfile(activeUser.id, email),
+        isOwnerAccountDisabled(),
       ]);
       setRole(next);
+      setAccountDisabled(disabled);
       setProfileName(
         profile?.full_name ||
           (activeUser.user_metadata?.full_name as string | undefined) ||
@@ -88,15 +99,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) {
       setRole(null);
+      setAccountDisabled(false);
       setProfileName(null);
       return;
     }
     void refreshRole();
   }, [user, refreshRole]);
 
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel(`profile-active-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${user.id}`,
+        },
+        () => {
+          void refreshRole();
+        },
+      )
+      .subscribe();
+
+    const interval = window.setInterval(() => {
+      void refreshRole();
+    }, 60_000);
+
+    return () => {
+      window.clearInterval(interval);
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id, refreshRole]);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setRole(null);
+    setAccountDisabled(false);
     setProfileName(null);
   }, []);
 
@@ -105,13 +147,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       user,
       role,
+      accountDisabled,
       profileName,
       loading,
       roleLoading,
       signOut,
       refreshRole,
     }),
-    [session, user, role, profileName, loading, roleLoading, signOut, refreshRole],
+    [session, user, role, accountDisabled, profileName, loading, roleLoading, signOut, refreshRole],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

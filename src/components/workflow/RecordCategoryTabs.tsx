@@ -19,10 +19,10 @@ export function RecordCategoryTabs({
       onValueChange={(v) => onChange(v as RecordCategoryId)}
       className={cn("w-full", className)}
     >
-      <div className="w-full border-b border-border/60 bg-muted/25">
+      <div className="w-full border-b border-border/60 bg-muted/25 overflow-x-auto">
         <TabsList
           className={cn(
-            "flex h-12 w-full min-w-0 items-stretch justify-stretch gap-0",
+            "flex h-12 w-full min-w-[min(100%,640px)] sm:min-w-0 items-stretch justify-stretch gap-0",
             "rounded-none bg-transparent p-0"
           )}
         >
@@ -42,7 +42,7 @@ export function RecordCategoryTabs({
                   "data-[state=inactive]:hover:bg-muted/80 data-[state=inactive]:hover:text-foreground"
                 )}
               >
-                <span className="flex w-full items-center justify-center gap-1.5 py-3 text-[13px] font-medium tracking-[-0.015em]">
+                <span className="flex w-full items-center justify-center gap-1 px-1 sm:px-0 sm:gap-1.5 py-3 text-[11px] sm:text-[13px] font-medium tracking-[-0.015em]">
                   <span className="truncate">{cat.shortLabel}</span>
                   <span
                     className={cn(

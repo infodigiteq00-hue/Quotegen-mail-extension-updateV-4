@@ -5,9 +5,9 @@ import type {
   LifecycleEventRow,
   QuotationRecordRow,
 } from "./workflow";
-import { buildDocumentPayload } from "./workflow";
+import { buildConversionDocumentLink, buildDocumentPayload, buildRevisionDocumentLink } from "./workflow";
 import type { WorkflowStoreData } from "./workflowStore";
-import { replaceStore } from "./workflowStore";
+import { bulkInsertWorkflowData } from "./workflowDb";
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
 
@@ -65,18 +65,18 @@ const toRecord = (
   };
 };
 
-/** Rich demo dataset — persisted in localStorage like real saves */
+/** Rich demo dataset — persisted to Supabase like real saves */
 export const buildSampleWorkflowStore = (): WorkflowStoreData => {
-  const id1 = "sample-qtn-1042";
-  const id2 = "sample-qtn-1038";
-  const id3 = "sample-qtn-1020";
-  const id3r1 = "sample-qtn-1020-r1";
-  const id4 = "sample-qtn-1015";
-  const id5 = "sample-qtn-0998";
-  const docInv = "sample-inv-2204";
-  const docPo = "sample-po-881";
-  const docPfi = "sample-pfi-3301";
-  const docDc = "sample-dc-1092";
+  const id1 = "a1000001-0001-4001-8001-000000000001";
+  const id2 = "a1000001-0001-4001-8001-000000000002";
+  const id3 = "a1000001-0001-4001-8001-000000000003";
+  const id3r1 = "a1000001-0001-4001-8001-000000000004";
+  const id4 = "a1000001-0001-4001-8001-000000000005";
+  const id5 = "a1000001-0001-4001-8001-000000000006";
+  const docInv = "b2000002-0002-4002-8002-000000000001";
+  const docPo = "b2000002-0002-4002-8002-000000000002";
+  const docPfi = "b2000002-0002-4002-8002-000000000003";
+  const docDc = "b2000002-0002-4002-8002-000000000004";
 
   const q1 = sampleQuotation({
     quote_no: "QTN-2026-1042",
@@ -458,15 +458,24 @@ export const buildSampleWorkflowStore = (): WorkflowStoreData => {
     },
   ];
 
+  const links = [
+    buildConversionDocumentLink(id1, docInv, "link-1", doc1.created_at),
+    buildConversionDocumentLink(id5, docPo, "link-2", doc2.created_at),
+    buildConversionDocumentLink(id2, docPfi, "link-3", doc3.created_at),
+    buildConversionDocumentLink(id1, docDc, "link-4", doc4.created_at),
+    buildRevisionDocumentLink(id3, id3r1, "link-5", r3r1.created_at),
+  ];
+
   return {
     records: [r1, r2, r3r1, r3, r4, r5],
     documents: [doc1, doc2, doc3, doc4],
     events,
+    links,
   };
 };
 
-export const loadSampleWorkflowData = (): WorkflowStoreData => {
+export const loadSampleWorkflowData = async (): Promise<WorkflowStoreData> => {
   const data = buildSampleWorkflowStore();
-  replaceStore(data);
+  await bulkInsertWorkflowData(data);
   return data;
 };

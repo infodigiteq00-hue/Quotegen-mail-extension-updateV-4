@@ -3,9 +3,9 @@
 // which is used ONLY to invoke the extract-quotation edge function.
 import { createClient } from "@supabase/supabase-js";
 
-const PRIMARY_SUPABASE_URL = "https://hrtvgakkumtrgsfaxjvp.supabase.co";
+const PRIMARY_SUPABASE_URL = "https://jlegawdatnsfqvuzlpky.supabase.co";
 const PRIMARY_SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhydHZnYWtrdW10cmdzZmF4anZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjgwMDMsImV4cCI6MjA5NDcwNDAwM30.Pn6eK2Dsybqf8Sg36swqy1K3TkQQh5Dlj8NEqGxbrD0";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsZWdhd2RhdG5zZnF2dXpscGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjQ4MjAsImV4cCI6MjA5NDcwMDgyMH0.vPAV4Y-BO5tH_6ie7gV9jDI_AOZgvTkPejoybEEjbYY";
 
 const memoryStore = new Map<string, string>();
 const safeStorage = {

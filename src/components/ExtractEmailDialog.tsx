@@ -104,7 +104,7 @@ export const ExtractEmailDialog = ({ open, onOpenChange, onExtracted }: Props) =
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <div className="p-1.5 rounded-md bg-gradient-primary text-primary-foreground">
@@ -121,14 +121,14 @@ export const ExtractEmailDialog = ({ open, onOpenChange, onExtracted }: Props) =
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Paste the enquiry email here..."
-          className="min-h-[260px] font-mono text-sm leading-relaxed resize-none"
+          className="min-h-[180px] sm:min-h-[260px] font-mono text-sm leading-relaxed resize-y"
         />
 
-        <div className="flex items-center justify-between gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setEmail(SAMPLE)} disabled={loading}>
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+          <Button variant="ghost" size="sm" className="w-full sm:w-auto" onClick={() => setEmail(SAMPLE)} disabled={loading}>
             <Wand2 className="h-3.5 w-3.5 mr-1.5" /> Try sample
           </Button>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Cancel</Button>
             <Button onClick={run} disabled={loading} className="bg-gradient-primary text-primary-foreground border-0 shadow-glow">
               {loading ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Extracting...</>) : (<><Sparkles className="h-4 w-4 mr-2" /> Extract Quotation</>)}

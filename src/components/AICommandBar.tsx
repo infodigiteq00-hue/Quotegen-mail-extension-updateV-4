@@ -59,7 +59,7 @@ export const AICommandBar = ({ onExtracted }: Props) => {
   };
 
   return (
-    <div className="no-print fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[min(720px,calc(100vw-2rem))]">
+    <div className="no-print fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 w-[min(720px,calc(100vw-1.5rem))] pb-[env(safe-area-inset-bottom)]">
       <div
         className="rounded-2xl border bg-card/95 backdrop-blur-xl shadow-glow overflow-hidden transition-all duration-200"
         onMouseEnter={() => setExpanded(true)}

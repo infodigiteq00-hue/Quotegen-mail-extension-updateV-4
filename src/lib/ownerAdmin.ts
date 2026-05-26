@@ -137,10 +137,29 @@ export async function updateOwnerInvite(
   }
 }
 
-export async function setOwnerAccountActive(userId: string | null, active: boolean) {
+export async function setOwnerAccountActive(
+  userId: string | null,
+  active: boolean,
+  ownerEmail?: string,
+) {
   if (!userId) throw new Error("Owner has not completed signup yet");
-  const { error } = await supabase.from("profiles").update({ is_active: active }).eq("id", userId);
+
+  const { data: updated, error } = await supabase
+    .from("profiles")
+    .update({ is_active: active, updated_at: new Date().toISOString() })
+    .eq("id", userId)
+    .select("id");
+
   if (error) throw error;
+
+  if ((updated?.length ?? 0) === 0 && ownerEmail) {
+    const { error: byEmailError } = await supabase
+      .from("profiles")
+      .update({ is_active: active, updated_at: new Date().toISOString() })
+      .ilike("email", ownerEmail.trim().toLowerCase())
+      .eq("role", "owner");
+    if (byEmailError) throw byEmailError;
+  }
 }
 
 export async function deleteOwnerInvite(id: string) {

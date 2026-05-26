@@ -14,11 +14,29 @@ import {
   DOCUMENT_LABELS,
   RECORD_CATEGORIES,
   type RecordCategoryId,
+  buildConversionDocumentLink,
+  buildRevisionDocumentLink,
 } from "./workflow";
-import { readStore, tick, uid, writeStore } from "./workflowStore";
+import { tick, uid } from "./workflowStore";
+import { migrateLegacyWorkflowStore } from "./workflowMigrate";
+import {
+  clearAllWorkflowData,
+  fetchAllCommercialDocuments,
+  fetchAllQuotationRecords,
+  fetchLifecycleEventsForQuotation,
+  fetchQuotationRecordById,
+  insertCommercialDocument,
+  insertDocumentLink,
+  insertLifecycleEvent,
+  updateQuotationRecordFields,
+  upsertQuotationRecord,
+} from "./workflowDb";
 
 export { loadSampleWorkflowData } from "./sampleWorkflowData";
-export { clearStore as clearWorkflowData } from "./workflowStore";
+
+export const clearWorkflowData = async () => {
+  await clearAllWorkflowData();
+};
 
 const applyRecordFilters = (rows: QuotationRecordRow[], filters: QuotationFilters) => {
   let result = [...rows];
@@ -51,16 +69,20 @@ const applyRecordFilters = (rows: QuotationRecordRow[], filters: QuotationFilter
   return result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 };
 
+const ensureWorkflowReady = async () => {
+  await migrateLegacyWorkflowStore();
+};
+
 export const listQuotationRecords = async (filters: QuotationFilters = {}): Promise<QuotationRecordRow[]> => {
   await tick();
-  const { records } = readStore();
+  await ensureWorkflowReady();
+  const records = await fetchAllQuotationRecords();
   return applyRecordFilters(records, filters);
 };
 
 export const getQuotationRecord = async (id: string): Promise<QuotationRecordRow | null> => {
   await tick();
-  const { records } = readStore();
-  return records.find((r) => r.id === id) || null;
+  return fetchQuotationRecordById(id);
 };
 
 export const saveQuotationRecord = async (
@@ -70,22 +92,21 @@ export const saveQuotationRecord = async (
   meta?: Partial<QuotationRecordRow>
 ): Promise<QuotationRecordRow> => {
   await tick();
-  const store = readStore();
+  await ensureWorkflowReady();
   const row = recordFromQuotation(q, branding, meta);
   const now = new Date().toISOString();
 
   if (existingId) {
-    const idx = store.records.findIndex((r) => r.id === existingId);
-    if (idx >= 0) {
+    const existing = await fetchQuotationRecordById(existingId);
+    if (existing) {
       const updated: QuotationRecordRow = {
-        ...(store.records[idx] as QuotationRecordRow),
+        ...existing,
         ...row,
         id: existingId,
         updated_at: now,
       };
-      store.records[idx] = updated;
-      writeStore(store);
-      return updated;
+      const saved = await upsertQuotationRecord(updated);
+      return saved;
     }
   }
 
@@ -95,28 +116,25 @@ export const saveQuotationRecord = async (
     created_at: now,
     updated_at: now,
   };
-  store.records.unshift(saved);
-  store.events.push({
+  const persisted = await upsertQuotationRecord(saved);
+  await insertLifecycleEvent({
     id: uid(),
-    quotation_id: saved.id,
+    quotation_id: persisted.id,
     document_id: null,
     event_type: "quotation_created",
     title: "Quotation Generated",
-    description: `${saved.quote_no} saved to records`,
-    metadata: { quote_no: saved.quote_no },
+    description: `${persisted.quote_no} saved to records`,
+    metadata: { quote_no: persisted.quote_no },
     created_at: now,
   });
-  writeStore(store);
-  return saved;
+  return persisted;
 };
 
 export const updateQuotationStatus = async (id: string, status: QuotationStatus) => {
   await tick();
-  const store = readStore();
-  const idx = store.records.findIndex((r) => r.id === id);
-  if (idx < 0) throw new Error("Record not found");
-  store.records[idx] = { ...store.records[idx], status, updated_at: new Date().toISOString() };
-  store.events.push({
+  const now = new Date().toISOString();
+  const updated = await updateQuotationRecordFields(id, { status, updated_at: now });
+  await insertLifecycleEvent({
     id: uid(),
     quotation_id: id,
     document_id: null,
@@ -124,20 +142,16 @@ export const updateQuotationStatus = async (id: string, status: QuotationStatus)
     title: `Status → ${status.replace(/_/g, " ")}`,
     description: null,
     metadata: { status },
-    created_at: new Date().toISOString(),
+    created_at: now,
   });
-  writeStore(store);
-  return store.records[idx];
+  return updated;
 };
 
 export const markExported = async (id: string) => {
   await tick();
-  const store = readStore();
-  const idx = store.records.findIndex((r) => r.id === id);
-  if (idx < 0) throw new Error("Record not found");
   const now = new Date().toISOString();
-  store.records[idx] = { ...store.records[idx], exported_at: now, updated_at: now };
-  store.events.push({
+  const updated = await updateQuotationRecordFields(id, { exported_at: now, updated_at: now });
+  await insertLifecycleEvent({
     id: uid(),
     quotation_id: id,
     document_id: null,
@@ -147,8 +161,7 @@ export const markExported = async (id: string) => {
     metadata: {},
     created_at: now,
   });
-  writeStore(store);
-  return store.records[idx];
+  return updated;
 };
 
 export const duplicateQuotationRecord = async (source: QuotationRecordRow): Promise<QuotationRecordRow> => {
@@ -180,8 +193,8 @@ export const createRevision = async (source: QuotationRecordRow): Promise<Quotat
     freight: source.freight,
     status: "revised",
   });
-  const store = readStore();
-  store.events.push({
+  const revisionAt = new Date().toISOString();
+  await insertLifecycleEvent({
     id: uid(),
     quotation_id: source.id,
     document_id: null,
@@ -189,9 +202,11 @@ export const createRevision = async (source: QuotationRecordRow): Promise<Quotat
     title: `Revision ${nextRev} Created`,
     description: saved.quote_no,
     metadata: { revision_id: saved.id, quote_no: saved.quote_no },
-    created_at: new Date().toISOString(),
+    created_at: revisionAt,
   });
-  writeStore(store);
+  await insertDocumentLink(
+    buildRevisionDocumentLink(source.id, saved.id, uid(), revisionAt),
+  );
   await updateQuotationStatus(source.id, "revised");
   return saved;
 };
@@ -201,7 +216,6 @@ export const convertToDocument = async (
   documentType: DocumentType
 ): Promise<CommercialDocumentRow> => {
   await tick();
-  const store = readStore();
   const docNumber = generateDocumentNumber(documentType);
   const docPayload = buildDocumentPayload(record.quotation_data, record.freight);
   const now = new Date().toISOString();
@@ -224,26 +238,27 @@ export const convertToDocument = async (
     updated_at: now,
   };
 
-  store.documents.unshift(doc);
-  store.events.push({
+  const persisted = await insertCommercialDocument(doc);
+  await insertDocumentLink(
+    buildConversionDocumentLink(record.id, persisted.id, uid(), now),
+  );
+  await insertLifecycleEvent({
     id: uid(),
     quotation_id: record.id,
-    document_id: doc.id,
+    document_id: persisted.id,
     event_type: "document_converted",
     title: `${DOCUMENT_LABELS[documentType]} Generated`,
     description: `${docNumber} created from ${record.quote_no}`,
     metadata: { document_type: documentType, document_number: docNumber },
     created_at: now,
   });
-  writeStore(store);
   await updateQuotationStatus(record.id, statusAfterConversion(documentType));
-  return doc;
+  return persisted;
 };
 
 export const listAllCommercialDocuments = async (): Promise<CommercialDocumentRow[]> => {
   await tick();
-  const { documents } = readStore();
-  return [...documents].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  return fetchAllCommercialDocuments();
 };
 
 export const listDocumentsByCategory = async (categoryId: RecordCategoryId): Promise<CommercialDocumentRow[]> => {
@@ -255,26 +270,26 @@ export const listDocumentsByCategory = async (categoryId: RecordCategoryId): Pro
 
 export const getRecordCategoryCounts = async (): Promise<Record<RecordCategoryId, number>> => {
   await tick();
-  const store = readStore();
+  const [records, documents] = await Promise.all([fetchAllQuotationRecords(), fetchAllCommercialDocuments()]);
   const counts = {} as Record<RecordCategoryId, number>;
   for (const cat of RECORD_CATEGORIES) {
     if (cat.id === "quotations") {
-      counts.quotations = store.records.length;
+      counts.quotations = records.length;
     } else if (cat.documentTypes) {
-      counts[cat.id] = store.documents.filter((d) => cat.documentTypes!.includes(d.document_type)).length;
+      counts[cat.id] = documents.filter((d) => cat.documentTypes!.includes(d.document_type)).length;
     }
   }
   return counts;
 };
 
-export const getQuotationQuoteNo = (id: string): string | null => {
-  const rec = readStore().records.find((r) => r.id === id);
+export const getQuotationQuoteNo = async (id: string): Promise<string | null> => {
+  const rec = await fetchQuotationRecordById(id);
   return rec?.quote_no ?? null;
 };
 
 export const listDocumentsForQuotation = async (quotationId: string): Promise<CommercialDocumentRow[]> => {
   await tick();
-  const { documents } = readStore();
+  const documents = await fetchAllCommercialDocuments();
   return documents
     .filter((d) => d.source_quotation_id === quotationId)
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -282,15 +297,12 @@ export const listDocumentsForQuotation = async (quotationId: string): Promise<Co
 
 export const listLifecycleEvents = async (quotationId: string): Promise<LifecycleEventRow[]> => {
   await tick();
-  const { events } = readStore();
-  return events
-    .filter((e) => e.quotation_id === quotationId)
-    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  return fetchLifecycleEventsForQuotation(quotationId);
 };
 
 export const getDashboardMetrics = async () => {
   const records = await listQuotationRecords();
-  const store = readStore();
+  const documents = await fetchAllCommercialDocuments();
   const approved = records.filter((r) => r.status === "approved" || r.status.startsWith("converted"));
   const pending = records.filter((r) => ["draft", "sent", "under_discussion", "revised"].includes(r.status));
   const totalQuoted = records.reduce((s, r) => s + Number(r.total_amount), 0);
@@ -300,7 +312,7 @@ export const getDashboardMetrics = async () => {
   const thisMonth = records.filter((r) => r.created_at >= monthStart);
   const monthValue = thisMonth.reduce((s, r) => s + Number(r.total_amount), 0);
 
-  const convertedInvoices = store.documents.filter((d) =>
+  const convertedInvoices = documents.filter((d) =>
     ["sales_invoice", "purchase_invoice", "proforma_invoice"].includes(d.document_type)
   );
 
@@ -318,7 +330,7 @@ export const getDashboardMetrics = async () => {
 export const listRevisions = async (record: QuotationRecordRow): Promise<QuotationRecordRow[]> => {
   await tick();
   const rootId = record.parent_id || record.id;
-  const { records } = readStore();
+  const records = await fetchAllQuotationRecords();
   return records
     .filter((r) => r.id === rootId || r.parent_id === rootId)
     .sort((a, b) => a.revision_number - b.revision_number);

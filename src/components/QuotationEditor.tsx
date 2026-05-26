@@ -299,7 +299,7 @@ export const QuotationEditor = ({ q, setQ }: Props) => {
   return (
     <div className="space-y-5">
       {/* Quote meta — primary subject up top, secondary meta as a single compact strip */}
-      <Card className="p-5 space-y-5">
+      <Card className="p-4 sm:p-5 space-y-5">
         <div>
           <Label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Subject</Label>
           <Input
@@ -337,7 +337,7 @@ export const QuotationEditor = ({ q, setQ }: Props) => {
       </Card>
 
       {/* Client — primary company line, then progressive details */}
-      <Card className="p-5 space-y-4">
+      <Card className="p-4 sm:p-5 space-y-4">
         <div>
           <Label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Client Company</Label>
           <Input
@@ -487,7 +487,7 @@ export const QuotationEditor = ({ q, setQ }: Props) => {
       </Card>
 
       {/* Terms */}
-      <Card className="p-5">
+      <Card className="p-4 sm:p-5">
         <SectionTitle>Commercial Terms</SectionTitle>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Payment Terms"><Input value={q.terms.payment_terms} onChange={(e) => setQ({ ...q, terms: { ...q.terms, payment_terms: e.target.value } })} /></Field>
@@ -498,7 +498,7 @@ export const QuotationEditor = ({ q, setQ }: Props) => {
         </div>
       </Card>
 
-      <Card className="p-5">
+      <Card className="p-4 sm:p-5">
         <SectionTitle>Notes</SectionTitle>
         <Textarea rows={4} placeholder="One note per line" value={q.notes.join("\n")} onChange={(e) => setQ({ ...q, notes: e.target.value.split("\n").filter(Boolean) })} />
       </Card>

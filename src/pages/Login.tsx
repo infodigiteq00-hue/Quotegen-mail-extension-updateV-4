@@ -6,20 +6,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth, dashboardPathForRole } from "@/contexts/AuthContext";
+import { isOwnerAccountDisabled } from "@/lib/auth";
 import { toast } from "sonner";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { user, role, loading, refreshRole } = useAuth();
+  const { user, role, loading, refreshRole, accountDisabled } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!loading && user && accountDisabled) {
+      navigate("/account-disabled", { replace: true });
+      return;
+    }
     if (!loading && user && role) {
       navigate(dashboardPathForRole(role), { replace: true });
     }
-  }, [user, role, loading, navigate]);
+  }, [user, role, accountDisabled, loading, navigate]);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -34,6 +39,11 @@ export default function Login() {
       }
 
       const resolved = await refreshRole(data.user);
+      const disabled = await isOwnerAccountDisabled();
+      if (disabled) {
+        navigate("/account-disabled", { replace: true });
+        return;
+      }
       const path = dashboardPathForRole(resolved);
       if (!resolved) {
         toast.error(

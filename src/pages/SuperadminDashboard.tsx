@@ -116,6 +116,69 @@ type FormState = { full_name: string; email: string; contact_number: string };
 
 const emptyForm: FormState = { full_name: "", email: "", contact_number: "" };
 
+function OwnerForm({
+  idPrefix,
+  form,
+  setForm,
+  onSubmit,
+  submitLabel,
+  submitting,
+  onCancel,
+}: {
+  idPrefix: string;
+  form: FormState;
+  setForm: React.Dispatch<React.SetStateAction<FormState>>;
+  onSubmit: (e: FormEvent) => void;
+  submitLabel: string;
+  submitting: boolean;
+  onCancel: () => void;
+}) {
+  return (
+    <form onSubmit={onSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}-name`}>Owner name</Label>
+        <Input
+          id={`${idPrefix}-name`}
+          placeholder="Jane Smith"
+          value={form.full_name}
+          onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
+          required
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}-email`}>Email ID</Label>
+        <Input
+          id={`${idPrefix}-email`}
+          type="email"
+          placeholder="owner@company.com"
+          value={form.email}
+          onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+          required
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}-contact`}>Contact number</Label>
+        <Input
+          id={`${idPrefix}-contact`}
+          type="tel"
+          placeholder="+91 98765 43210"
+          value={form.contact_number}
+          onChange={(e) => setForm((f) => ({ ...f, contact_number: e.target.value }))}
+          required
+        />
+      </div>
+      <DialogFooter className="gap-2 sm:gap-0 pt-2">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={submitting} className="min-w-[120px]">
+          {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : submitLabel}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
 export default function SuperadminDashboard() {
   const [stats, setStats] = useState<OwnerStats>({ totalUsers: 0, activeUsers: 0, pendingInvites: 0 });
   const [owners, setOwners] = useState<OwnerRow[]>([]);
@@ -211,7 +274,7 @@ export default function SuperadminDashboard() {
     const nextActive = !isCurrentlyActive;
     setActionId(row.id);
     try {
-      await setOwnerAccountActive(row.user_id, nextActive);
+      await setOwnerAccountActive(row.user_id, nextActive, row.email);
       toast.success(nextActive ? "Account enabled" : "Account disabled");
       await load();
     } catch (err) {
@@ -281,51 +344,6 @@ export default function SuperadminDashboard() {
     [stats],
   );
 
-  const OwnerForm = ({ onSubmit, submitLabel }: { onSubmit: (e: FormEvent) => void; submitLabel: string }) => (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="owner-name">Owner name</Label>
-        <Input
-          id="owner-name"
-          placeholder="Jane Smith"
-          value={form.full_name}
-          onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
-          required
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="owner-email">Email ID</Label>
-        <Input
-          id="owner-email"
-          type="email"
-          placeholder="owner@company.com"
-          value={form.email}
-          onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-          required
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="owner-contact">Contact number</Label>
-        <Input
-          id="owner-contact"
-          type="tel"
-          placeholder="+91 98765 43210"
-          value={form.contact_number}
-          onChange={(e) => setForm((f) => ({ ...f, contact_number: e.target.value }))}
-          required
-        />
-      </div>
-      <DialogFooter className="gap-2 sm:gap-0 pt-2">
-        <Button type="button" variant="outline" onClick={() => (inviteOpen ? setInviteOpen(false) : setEditOpen(false))}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={submitting} className="min-w-[120px]">
-          {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : submitLabel}
-        </Button>
-      </DialogFooter>
-    </form>
-  );
-
   return (
     <AppShell>
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -375,8 +393,8 @@ export default function SuperadminDashboard() {
                 <p className="text-sm text-muted-foreground">No owners yet. Click &quot;Invite owner&quot; to add one.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-lg border mx-4 sm:mx-0 mb-4 sm:mb-0">
-                <Table>
+              <div className="table-scroll rounded-lg border mx-4 sm:mx-0 mb-4 sm:mb-0">
+                <Table className="min-w-[880px]">
                   <TableHeader>
                     <TableRow className="bg-muted/40 hover:bg-muted/40">
                       <TableHead>Owner name</TableHead>
@@ -486,7 +504,15 @@ export default function SuperadminDashboard() {
               An invitation email will be sent. The owner must accept, sign up, and confirm email before logging in.
             </DialogDescription>
           </DialogHeader>
-          <OwnerForm onSubmit={onInviteSubmit} submitLabel="Send invite" />
+          <OwnerForm
+            idPrefix="invite-owner"
+            form={form}
+            setForm={setForm}
+            onSubmit={onInviteSubmit}
+            submitLabel="Send invite"
+            submitting={submitting}
+            onCancel={() => setInviteOpen(false)}
+          />
         </DialogContent>
       </Dialog>
 
@@ -496,7 +522,15 @@ export default function SuperadminDashboard() {
             <DialogTitle>Edit owner</DialogTitle>
             <DialogDescription>Update owner details stored on the invitation.</DialogDescription>
           </DialogHeader>
-          <OwnerForm onSubmit={onEditSubmit} submitLabel="Save changes" />
+          <OwnerForm
+            idPrefix="edit-owner"
+            form={form}
+            setForm={setForm}
+            onSubmit={onEditSubmit}
+            submitLabel="Save changes"
+            submitting={submitting}
+            onCancel={() => setEditOpen(false)}
+          />
         </DialogContent>
       </Dialog>
 

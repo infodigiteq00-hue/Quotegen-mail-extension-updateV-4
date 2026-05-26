@@ -84,6 +84,25 @@
 }
 
 @layer utilities {
+  /* Horizontal scroll for wide tables on tablet/mobile — desktop tables unchanged */
+  .table-scroll {
+    @apply w-full overflow-x-auto overscroll-x-contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-scroll > table {
+    @apply min-w-[720px];
+  }
+
+  /* Page shell: tighter padding below lg; lg+ matches original spacing */
+  .page-main {
+    @apply w-full max-w-[min(100%,1920px)] mx-auto px-4 sm:px-6 py-6 sm:py-8;
+  }
+  @screen lg {
+    .page-main {
+      @apply px-8 py-8;
+    }
+  }
+
   .font-serif { font-family: 'Geist', 'Inter', system-ui, sans-serif; font-weight: 600; letter-spacing: -0.04em; }
   .font-display { font-family: 'Geist', 'Inter', system-ui, sans-serif; font-weight: 600; letter-spacing: -0.04em; }
   .font-mono { font-family: 'JetBrains Mono', monospace; }

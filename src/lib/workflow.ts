@@ -193,6 +193,54 @@ export interface LifecycleEventRow {
   created_at: string;
 }
 
+export type DocumentLinkType = "converted_from" | "revision_of";
+
+export interface DocumentLinkRow {
+  id: string;
+  source_type: string;
+  source_id: string;
+  target_type: string;
+  target_id: string;
+  link_type: DocumentLinkType;
+  created_at: string;
+}
+
+export function buildConversionDocumentLink(
+  quotationId: string,
+  documentId: string,
+  id?: string,
+  createdAt?: string,
+): DocumentLinkRow {
+  const now = createdAt ?? new Date().toISOString();
+  return {
+    id: id ?? crypto.randomUUID(),
+    source_type: "quotation_record",
+    source_id: quotationId,
+    target_type: "commercial_document",
+    target_id: documentId,
+    link_type: "converted_from",
+    created_at: now,
+  };
+}
+
+export function buildRevisionDocumentLink(
+  sourceQuotationId: string,
+  revisionQuotationId: string,
+  id?: string,
+  createdAt?: string,
+): DocumentLinkRow {
+  const now = createdAt ?? new Date().toISOString();
+  return {
+    id: id ?? crypto.randomUUID(),
+    source_type: "quotation_record",
+    source_id: sourceQuotationId,
+    target_type: "quotation_record",
+    target_id: revisionQuotationId,
+    link_type: "revision_of",
+    created_at: now,
+  };
+}
+
 export interface QuotationFilters {
   search?: string;
   status?: QuotationStatus | "all";

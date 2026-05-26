@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { getQuotationRecord, markExported, saveQuotationRecord } from "@/lib/quotationRecords";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 const shiftHex = (hex: string, delta: number) => {
@@ -164,7 +165,7 @@ const PaletteColorPicker = ({
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-[300px] rounded-xl border bg-[#1f2024] text-white p-3 shadow-2xl">
+        <div className="absolute z-50 mt-1 w-[min(300px,calc(100vw-2rem))] max-w-[300px] rounded-xl border bg-[#1f2024] text-white p-3 shadow-2xl left-0 right-0 sm:left-auto sm:right-auto">
           <div className="space-y-2">
             <input
               type="color"
@@ -236,7 +237,8 @@ const Index = () => {
   const [includeStandardTerms, setIncludeStandardTerms] = useState(true);
   const [includeGlobalNotes, setIncludeGlobalNotes] = useState(true);
   const [printOverrides, setPrintOverrides] = useState<{ bank: boolean; terms: boolean; notes: boolean } | null>(null);
-  
+  const [workspacePane, setWorkspacePane] = useState<"editor" | "preview">("editor");
+
   const [brand, setBrand] = useState<BrandingSettings>(defaultBranding());
 
   useEffect(() => {
@@ -468,34 +470,34 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-mesh">
       {/* Top bar */}
       <header className="no-print sticky top-0 z-30 backdrop-blur-xl bg-background/80 border-b">
-        <div className="max-w-[1400px] mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-gradient-primary flex items-center justify-center shadow-glow">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-6 h-14 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0 shrink">
+            <div className="h-7 w-7 rounded-lg bg-gradient-primary flex items-center justify-center shadow-glow shrink-0">
               <svg viewBox="0 0 24 24" className="h-4 w-4 text-primary-foreground" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 4h11l3 3v10a2 2 0 0 1-2 2H5z" />
                 <path d="M9 13l2 2 4-5" />
               </svg>
             </div>
-            <div className="text-[15px] font-semibold tracking-tight">QuoteGen</div>
+            <div className="text-[15px] font-semibold tracking-tight truncate">QuoteGen</div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Link to="/records"><Button variant="ghost" size="sm"><FolderOpen className="h-4 w-4 mr-1.5" />Records</Button></Link>
-            <Link to="/catalog"><Button variant="ghost" size="sm"><Package className="h-4 w-4 mr-1.5" />Catalog</Button></Link>
+          <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-end min-w-0">
+            <Link to="/records"><Button variant="ghost" size="sm" className="h-8 px-2 sm:px-3"><FolderOpen className="h-4 w-4 sm:mr-1.5" /><span className="hidden sm:inline">Records</span></Button></Link>
+            <Link to="/catalog"><Button variant="ghost" size="sm" className="h-8 px-2 sm:px-3"><Package className="h-4 w-4 sm:mr-1.5" /><span className="hidden sm:inline">Catalog</span></Button></Link>
             {hasContent && (
-              <Button variant="outline" size="sm" onClick={handleSave} disabled={saving}>
-                <Save className="h-4 w-4 mr-1.5" />{saving ? "Saving…" : recordId ? "Update" : "Save"}
+              <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3" onClick={handleSave} disabled={saving}>
+                <Save className="h-4 w-4 sm:mr-1.5" /><span className="hidden sm:inline">{saving ? "Saving…" : recordId ? "Update" : "Save"}</span>
               </Button>
             )}
             <Sheet open={brandingOpen} onOpenChange={setBrandingOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="sm"><Settings2 className="h-4 w-4 mr-1.5" />Branding</Button>
+                <Button variant="ghost" size="sm" className="h-8 px-2 sm:px-3"><Settings2 className="h-4 w-4 sm:mr-1.5" /><span className="hidden md:inline">Branding</span></Button>
               </SheetTrigger>
-              <SheetContent className="w-[min(1500px,98vw)] sm:max-w-none p-0">
-                <div className="h-full grid grid-cols-[220px_1fr_1.15fr] bg-muted/20">
-                  <aside className="border-r bg-background/80 p-4">
-                    <div className="text-sm font-semibold mb-4">Branding Studio</div>
-                    <div className="space-y-1">
+              <SheetContent className="w-full max-w-[min(1500px,100vw)] sm:max-w-none p-0 overflow-hidden">
+                <div className="h-full min-h-0 flex flex-col xl:grid xl:grid-cols-[220px_1fr_1.15fr] bg-muted/20">
+                  <aside className="border-b xl:border-b-0 xl:border-r bg-background/80 p-3 sm:p-4 shrink-0">
+                    <div className="text-sm font-semibold mb-3 xl:mb-4">Branding Studio</div>
+                    <div className="flex xl:flex-col gap-1 overflow-x-auto xl:overflow-visible pb-1 xl:pb-0 -mx-1 px-1 xl:mx-0 xl:px-0">
                       {[
                         { id: "overview", label: "Overview", icon: LayoutDashboard },
                         { id: "header", label: "Header", icon: Heading },
@@ -508,28 +510,31 @@ const Index = () => {
                           key={item.id}
                           type="button"
                           onClick={() => setBrandingSection(item.id as typeof brandingSection)}
-                          className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition ${brandingSection === item.id ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition whitespace-nowrap shrink-0 xl:shrink xl:w-full",
+                            brandingSection === item.id ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                          )}
                         >
-                          <item.icon className="h-4 w-4" />
+                          <item.icon className="h-4 w-4 shrink-0" />
                           <span>{item.label}</span>
                         </button>
                       ))}
                     </div>
-                    <div className="mt-6">
+                    <div className="mt-4 xl:mt-6">
                       <Button className="w-full h-10" onClick={() => { saveDefaultBranding(brand); setBrandingOpen(false); }}>
                         <Save className="h-4 w-4 mr-1.5" />Save default
                       </Button>
                     </div>
                   </aside>
 
-                  <main className="overflow-y-auto p-5 space-y-4 bg-background">
+                  <main className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-4 bg-background">
                     {brandingSection === "overview" && (
                       <section className="rounded-xl border bg-card p-4 space-y-3">
                         <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">A. Document Branding</div>
                   <div className="space-y-1.5"><Label>Company name</Label><Input value={brand.company} onChange={(e) => setBrand({ ...brand, company: e.target.value })} /></div>
                   <div className="space-y-1.5"><Label>Tagline</Label><Input value={brand.tagline} onChange={(e) => setBrand({ ...brand, tagline: e.target.value })} /></div>
                         <div className="space-y-1.5"><Label>Address / contact line</Label><Input value={brand.address} onChange={(e) => setBrand({ ...brand, address: e.target.value })} /></div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div className="space-y-1.5"><Label>Email</Label><Input value={brand.email || ""} onChange={(e) => setBrand({ ...brand, email: e.target.value })} /></div>
                           <div className="space-y-1.5"><Label>Phone</Label><Input value={brand.phone || ""} onChange={(e) => setBrand({ ...brand, phone: e.target.value })} /></div>
                           <div className="space-y-1.5"><Label>Website (optional)</Label><Input value={brand.website || ""} onChange={(e) => setBrand({ ...brand, website: e.target.value })} /></div>
@@ -874,7 +879,7 @@ const Index = () => {
                     )}
                   </main>
 
-                  <aside className="border-l bg-muted/10 p-4">
+                  <aside className="border-t xl:border-t-0 xl:border-l bg-muted/10 p-4 flex-1 min-h-[280px] xl:min-h-0 xl:flex-none">
                     <div className="flex items-center justify-between mb-3">
                       <div className="text-sm font-medium flex items-center gap-2"><Eye className="h-4 w-4" />Live Preview</div>
                       <div className="flex items-center gap-1">
@@ -883,7 +888,7 @@ const Index = () => {
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setStudioZoom((z) => Math.min(1, +(z + 0.05).toFixed(2)))}><Plus className="h-3.5 w-3.5" /></Button>
                       </div>
                     </div>
-                    <div className="h-[calc(100vh-9rem)] min-h-[560px] rounded-lg border bg-background overflow-y-auto overflow-x-hidden p-4">
+                    <div className="h-[min(420px,50vh)] xl:h-[calc(100vh-9rem)] xl:min-h-[560px] rounded-lg border bg-background overflow-y-auto overflow-x-hidden p-3 sm:p-4">
                       <div className="flex justify-center">
                         <div className="origin-top" style={{ zoom: studioZoom, width: "210mm" }}>
                           <QuotationPreview q={q} brand={previewBrand} />
@@ -895,11 +900,11 @@ const Index = () => {
               </SheetContent>
             </Sheet>
 
-            <Button variant="outline" size="sm" onClick={onExportClick} disabled={!hasContent}>
-              <Download className="h-4 w-4 mr-1.5" />Export PDF
+            <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3" onClick={onExportClick} disabled={!hasContent}>
+              <Download className="h-4 w-4 sm:mr-1.5" /><span className="hidden md:inline">Export PDF</span>
             </Button>
-            <Button size="sm" onClick={() => setOpen(true)} className="bg-gradient-primary text-primary-foreground border-0 shadow-glow">
-              <Sparkles className="h-4 w-4 mr-1.5" />Extract from Email
+            <Button size="sm" className="h-8 px-2 sm:px-3 bg-gradient-primary text-primary-foreground border-0 shadow-glow" onClick={() => setOpen(true)}>
+              <Sparkles className="h-4 w-4 sm:mr-1.5" /><span className="hidden md:inline">Extract from Email</span>
             </Button>
           </div>
         </div>
@@ -910,26 +915,26 @@ const Index = () => {
         <section className="no-print relative overflow-hidden">
           <div className="absolute inset-0 grid-bg opacity-[0.4] [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]" />
           <div className="absolute inset-0 bg-gradient-glow" />
-          <div className="relative max-w-[1100px] mx-auto px-6 pt-20 pb-14 text-center">
+          <div className="relative max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-6 pt-12 sm:pt-16 lg:pt-20 pb-10 sm:pb-14 text-center">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border bg-card/60 backdrop-blur text-[11px] text-muted-foreground mb-6">
               <Sparkles className="h-3 w-3 text-accent" /> Powered by AI · Built for industrial sales teams
             </div>
-            <h1 className="text-5xl md:text-6xl font-serif tracking-tight leading-[1.05] max-w-3xl mx-auto">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif tracking-tight leading-[1.05] max-w-3xl mx-auto">
               Turn messy enquiry emails into <em className="text-accent not-italic">commercial-grade quotations</em>
             </h1>
             <p className="mt-5 text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
               Paste any RFQ — pumps, valves, gaskets, fabrication, anything. Quotient understands context, normalizes specs, groups items intelligently, and arranges a clean quotation in seconds.
             </p>
-            <div className="mt-8 flex items-center justify-center gap-3">
-              <Button size="lg" onClick={() => setOpen(true)} className="bg-gradient-primary text-primary-foreground border-0 shadow-glow h-12 px-6">
+            <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 px-2 sm:px-0">
+              <Button size="lg" onClick={() => setOpen(true)} className="bg-gradient-primary text-primary-foreground border-0 shadow-glow h-11 sm:h-12 px-6 w-full sm:w-auto">
                 <Sparkles className="h-4 w-4 mr-2" /> Extract from Email
               </Button>
-              <Button size="lg" variant="outline" className="h-12 px-6" onClick={() => setQ({ ...q, items: [{ id: crypto.randomUUID(), item_name: "", description: "", qty: 1, unit: "Nos", moc: "", unit_price: 0, discount: 0 }] })}>
+              <Button size="lg" variant="outline" className="h-11 sm:h-12 px-6 w-full sm:w-auto" onClick={() => setQ({ ...q, items: [{ id: crypto.randomUUID(), item_name: "", description: "", qty: 1, unit: "Nos", moc: "", unit_price: 0, discount: 0 }] })}>
                 <FileText className="h-4 w-4 mr-2" /> Start blank
               </Button>
             </div>
 
-            <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-3 text-left max-w-3xl mx-auto">
+            <div className="mt-10 sm:mt-16 grid grid-cols-1 md:grid-cols-3 gap-3 text-left max-w-3xl mx-auto px-2 sm:px-0">
               {[
                 { t: "Context-aware parsing", d: "Ignores greetings, signatures, forwards. Extracts only what matters." },
                 { t: "Intelligent grouping", d: "Specs stay attached to their item. No noisy line-by-line dumps." },
@@ -947,17 +952,43 @@ const Index = () => {
 
       {/* Workspace - Split View */}
       {hasContent && (
-        <main className="no-print max-w-[1800px] mx-auto px-6 py-6 pb-32">
-          <div className="flex items-center justify-between mb-5">
+        <main className="no-print max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-6 py-4 sm:py-6 pb-28 sm:pb-32">
+          <div className="flex items-center justify-between mb-4 sm:mb-5">
             <div>
               <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Quotation</div>
-              <div className="font-mono text-lg">{q.quote_no}</div>
+              <div className="font-mono text-base sm:text-lg">{q.quote_no}</div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          <div className="lg:hidden flex gap-1 mb-4 p-1 rounded-lg bg-muted/60 border">
+            <Button
+              type="button"
+              variant={workspacePane === "editor" ? "secondary" : "ghost"}
+              size="sm"
+              className="flex-1 h-9"
+              onClick={() => setWorkspacePane("editor")}
+            >
+              Editable form
+            </Button>
+            <Button
+              type="button"
+              variant={workspacePane === "preview" ? "secondary" : "ghost"}
+              size="sm"
+              className="flex-1 h-9"
+              onClick={() => setWorkspacePane("preview")}
+            >
+              Live preview
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
             {/* Left: Editor */}
-            <div className="lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] flex flex-col">
+            <div
+              className={cn(
+                "lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] flex flex-col",
+                workspacePane !== "editor" && "hidden lg:flex",
+              )}
+            >
               <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-primary" />
@@ -971,7 +1002,12 @@ const Index = () => {
             </div>
 
             {/* Right: Live Preview */}
-            <div className="lg:sticky lg:top-20 flex flex-col">
+            <div
+              className={cn(
+                "lg:sticky lg:top-20 flex flex-col",
+                workspacePane !== "preview" && "hidden lg:flex",
+              )}
+            >
               <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -980,8 +1016,8 @@ const Index = () => {
                 </div>
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground bg-secondary px-2 py-0.5 rounded">A4</span>
               </div>
-              <div className="rounded-xl bg-gradient-to-br from-primary/5 via-background to-accent/5 border-2 border-primary/10 shadow-elegant h-[calc(100vh-9.5rem)] min-h-[560px] max-h-[calc(100vh-9.5rem)] overflow-hidden">
-                <div className="h-full overflow-y-auto overflow-x-hidden p-6">
+              <div className="rounded-xl bg-gradient-to-br from-primary/5 via-background to-accent/5 border-2 border-primary/10 shadow-elegant h-[min(520px,70vh)] sm:h-[min(560px,75vh)] lg:h-[calc(100vh-9.5rem)] lg:min-h-[560px] lg:max-h-[calc(100vh-9.5rem)] overflow-hidden">
+                <div className="h-full overflow-y-auto overflow-x-hidden p-3 sm:p-6">
                   <div className="flex justify-center">
                   <div
                       className="origin-top"

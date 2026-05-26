@@ -38,17 +38,17 @@ export function CommercialDocumentsTable({
   }
 
   return (
-    <div className="w-full overflow-x-auto">
-      <table className="w-full min-w-full text-sm table-fixed">
+    <div className="table-scroll">
+      <table className="w-full text-sm table-fixed">
         <thead>
           <tr className="border-b bg-muted/30 text-left text-[11px] font-medium tracking-wide text-muted-foreground">
-            <th className="w-[14%] px-5 py-3 font-medium">Document</th>
-            <th className="w-[12%] px-5 py-3 font-medium">Type</th>
-            <th className="w-[14%] px-5 py-3 font-medium">Source quote</th>
-            <th className="w-[22%] px-5 py-3 font-medium">Client</th>
-            <th className="w-[12%] px-5 py-3 font-medium">Date</th>
-            <th className="w-[14%] px-5 py-3 font-medium text-right">Amount</th>
-            <th className="w-[12%] px-5 py-3 font-medium text-right">Actions</th>
+            <th className="w-[14%] px-3 sm:px-5 py-3 font-medium">Document</th>
+            <th className="w-[12%] px-3 sm:px-5 py-3 font-medium">Type</th>
+            <th className="w-[14%] px-3 sm:px-5 py-3 font-medium">Source quote</th>
+            <th className="w-[22%] px-3 sm:px-5 py-3 font-medium">Client</th>
+            <th className="w-[12%] px-3 sm:px-5 py-3 font-medium">Date</th>
+            <th className="w-[14%] px-3 sm:px-5 py-3 font-medium text-right">Amount</th>
+            <th className="w-[12%] px-3 sm:px-5 py-3 font-medium text-right">Actions</th>
           </tr>
         </thead>
         <tbody>

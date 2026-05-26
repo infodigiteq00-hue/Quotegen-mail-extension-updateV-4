@@ -9,7 +9,7 @@ export function ProtectedRoute({
   children: React.ReactNode;
   allowedRoles?: ("superadmin" | "owner")[];
 }) {
-  const { user, loading, role, roleLoading } = useAuth();
+  const { user, loading, role, roleLoading, accountDisabled } = useAuth();
   const location = useLocation();
 
   if (loading || (user && roleLoading)) {
@@ -22,6 +22,10 @@ export function ProtectedRoute({
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (accountDisabled) {
+    return <Navigate to="/account-disabled" replace />;
   }
 
   if (!roleLoading && !role) {
